@@ -6,9 +6,6 @@ import re
 import codecs
 import json
 
-file_in_path  = "map.osm"
-file_out_path = "example.json"
-
 
 def getAdress(subtag, address_type):
     if address_type == 'street':
@@ -58,18 +55,16 @@ def shape_element(element):
     else:
         return None
 
-def process(file_in_path):   
+def process(file):   
     data = []
-    for _, element in ET.iterparse(file_in_path):
+    for _, element in ET.iterparse(file):
             el = shape_element(element)
             if el:
                 data.append(el)
                 
     return data
     
-def test():
-    data = process(file_in_path)
-    print data
-    
-if __name__ == "__main__":
-    test()
+
+file_path  = "../data/bhmicro"
+data = process( file_path + ".osm")
+print data
