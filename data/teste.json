@@ -1,0 +1,3 @@
+{"changeset": "8167769", "uid": "72239", "timestamp": "2011-05-17T01:14:34Z", "lon": "-43.9455990", "visible": "true", "version": "5", "user": "Samuel Vale", "lat": "-19.9221016", "type": "node", "id": "27563807", "highway": "traffic_signals"}
+{"changeset": "20043769", "uid": "582148", "timestamp": "2014-01-17T00:55:57Z", "lon": "-43.9446267", "visible": "true", "version": "5", "user": "Gerald Weber", "lat": "-19.9234211", "type": "node", "id": "27563808"}
+{"changeset": "6272771", "uid": "72239", "timestamp": "2010-11-02T23:46:41Z", "lon": "-43.9354502", "visible": "true", "version": "4", "user": "Samuel Vale", "lat": "-19.9329131", "type": "node", "id": "27563811", "highway": "traffic_signals"}
