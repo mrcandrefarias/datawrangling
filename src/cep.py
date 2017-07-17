@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from sets import Set
 import re
+import string 
 def get_db():
     '''
         Conecta-se ao MongoDB.
@@ -47,6 +48,10 @@ def format_cep_invalido(cep_invalido):
     return cep
 
 def verifica_logradouro_invalido(logradouro):
+    if logradouro[0].isupper():
+        return
+        
+    print logradouro
     '''
         Realiza a verificação dos logradouros.
         Args:
@@ -55,9 +60,9 @@ def verifica_logradouro_invalido(logradouro):
             logradouro(string) ou None: Retorna o logradouro no novo formato, pra ser atualizado,
             None caso o logradouro esteja correto.
     '''
-    logradouro_mapping = { "Av":"Avenida", "Av.":"Avenida", "R":"Rua", "R.":"Rua",  "rua":"Rua",
-                           "r.":"Rua", "r":"Rua", "Pr.":u"Praça", "PR.":u"Praça"}
-
+        
+    logradouro_mapping = { "Av": "Avenida", "Av.": "Avenida", "R": "Rua", "R.": "Rua", "PR.": u"Praça"}
+    
     #Compila a expressão regular "^\S+\.?". Incio da string até algum espaço ou ponto "."
     logradouro_regex = re.compile(r'^\S+\.?',re.IGNORECASE)
 
@@ -66,12 +71,21 @@ def verifica_logradouro_invalido(logradouro):
     match  = logradouro_regex.search(logradouro)
     if match:
         nome_inicial = match.group(0)
+        nome_inicial = nome_inicial[0].upper() + nome_inicial[1:]
         if nome_inicial in logradouro_mapping.keys():
+            print "logradouro invalido:" + logradouro
             return re.sub(logradouro_regex, logradouro_mapping[nome_inicial], logradouro)
-        else
-         return None
-     else:
-         return None
+        else:
+            if not logradouro[0].isupper():
+                print "Nome de logradouro iniciado com letra minúscula:" , logradouro
+                # Coloca a primeira letra em maisculo, evitando que os nomes dos logradouros iniciem com letra minuscula.
+                return logradouro[0].upper() + logradouro[1:]
+            else:
+                return None
+    else:
+        print "logradouro invalido fora dos padroes:" + logradouro
+        return None
+       
 
 def verificaEnderecos(db):
     '''
@@ -92,32 +106,63 @@ def verificaEnderecos(db):
         # Nem todos os endereços foram preenchidos com cep
         if 'postcode' in endereco['address']:
             if is_formato_cep_invalido (endereco['address']['postcode']):
-                endereco['address']['postcode'] = format_cep( endereco['address']['postcode'] )
+                endereco['address']['postcode']      = format_cep_invalido( endereco['address']['postcode'] )
                 endereco_verificados['cep_invalido'] += 1
-                clean = True
+                clean                                = True
             else:
                 endereco_verificados['cep_valido'] += 1
 
         # realiza a limpeza dos logradouros (street). Verifica se existe a chave street.
         # Nem todos os endereços foram preenchidos com o nome do logradouro
-        if 'street' in endereco['street']:
-            logradouro_invalido = verifica_logradouro_invalido(endereco['street'])
+        if 'street' in endereco['address']:
+            logradouro_invalido = verifica_logradouro_invalido(endereco['address']['street'])
             if logradouro_invalido is not None:
-                endereco['address']['postcode'] = logradouro_invalido
+                endereco['address']['street']                = logradouro_invalido
                 endereco_verificados['logradouro_invalido'] += 1
-                clean = True
+                clean                                       = True
             else:
                 endereco_verificados['logradouro_valido'] += 1
-        '''
-            Existindo alguma informação no endereco que deve ser limpa,
-            executa a atualização das informações do endereço no banco de dados
-        '''
+        
+        # Caso Exista alguma informação no endereco que deve ser limpa.
         if(clean):
-            print "Limpando endereço:" + endereco
+            #print ("Limpando endereço:", endereco)
+            #executa a atualização das informações do endereço no banco de dados
             db.bh.save(endereco)
+            
+    return endereco_verificados
 
-#db = get_db()
-#endereco_verificados = verificaEnderecos(db)
-#print endereco_verificados
+def verifica_nome_belo_horizonte(db):
+    '''
+        Realiza a verificação do nome da cidade de Belo Horizonte. 
+        Existem erros de digitação no nome da cidade e nomeclaturas diferentes para a cidade (bh, Belo Horizonte MG Brazil e etc)
+        Args:
+            db (MongoClient): Conexão à base de dados bh-osm.
+        Returns:
+             dictionary - contendo um sumário das informações verificadas.
+             exemplo: { 'nome_valido': 100, 'nome_invalido': 20}
+        '''
+    # nome iniciado com BH
+    regx1    = re.compile("^bh", re.IGNORECASE)
+    # Nome iniciado com belo
+    regx2    = re.compile("^belo", re.IGNORECASE)
+    # Procura as incidencias da cidade de Belo Horizonte, baseado nos padrões acima.
+    nomes_bh = db.bh.find(  {"$or":[ {"address.city": regx1}, {"address.city": regx2 } ] }, {"address.city":1, "_id":1} )
+    retorno  = { 'nome_valido': 0, 'nome_invalido': 0}
+    for nome in nomes_bh:
+        # Nome da cidade diferente do valor Correto
+        if nome['address']['city'] != 'Belo Horizonte':
+            nome['address']['city'] = 'Belo Horizonte'
+            # Atualiza o nome da cidade
+            db.bh.save(nome)
+            retorno['nome_invalido'] += 1
+        else:
+            retorno['nome_valido'] += 1
+    return retorno
 
-format_cep_invalido("000000-000")
+
+db = get_db()
+endereco_verificados = verificaEnderecos(db)
+print endereco_verificados
+
+nomes_bh = verifica_nome_belo_horizonte(db)
+print nomes_bh

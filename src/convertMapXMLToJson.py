@@ -40,5 +40,5 @@ def xml_to_json(arquivo_entrada, arquivo_saida):
                 saida.write( json.dumps(el) + "\n")
                 
 
-file_path  = "../data/bhmicro"
+file_path  = "../data/bh"
 xml_to_json( file_path + ".osm", file_path + ".json")
