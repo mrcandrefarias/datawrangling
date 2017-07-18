@@ -44,7 +44,17 @@ def format_cep_invalido(cep_invalido):
     cep = re.sub('[^0-9]', '', cep_invalido)
     #Verificando quantos caracteres faltam para completar oito dígitos
     caracteres_faltando = 8 - len(cep)
-    cep = '{}{}{}'.format( cep[0:5], '-', cep[5:] + '0' * caracteres_faltando)
+    
+    #cep possui 8 digitos apenas adiciona o '-'
+    if caracteres_faltando == 0:
+         cep = '{}{}{}'.format( cep[0:5], '-', cep[5:] )
+    #cep possui menos que 8 digitos, adiciona o '-' e zeros no final
+    if caracteres_faltando > 0:
+        cep = '{}{}{}'.format( cep[0:5], '-', cep[5:] + '0' * caracteres_faltando)
+    #cep possui mais que 8 digitos, adiciona o '-' e elimina caracteres adicionais
+    if caracteres_faltando < 0:
+        cep = '{}{}{}'.format( cep[0:5], '-', cep[5:8] )
+    
     return cep
 
 def verifica_logradouro_invalido(logradouro):
@@ -140,7 +150,7 @@ def verifica_nome_belo_horizonte(db):
         Returns:
              dictionary - contendo um sumário das informações verificadas.
              exemplo: { 'nome_valido': 100, 'nome_invalido': 20}
-        '''
+    '''
     # nome iniciado com BH
     regx1    = re.compile("^bh", re.IGNORECASE)
     # Nome iniciado com belo
