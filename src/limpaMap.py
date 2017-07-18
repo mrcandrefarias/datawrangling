@@ -169,10 +169,24 @@ def verifica_nome_belo_horizonte(db):
             retorno['nome_valido'] += 1
     return retorno
 
-
+def exclui_cidades_diferentes(db):
+    '''
+        Realiza a exclusao das cidades diferentes de Belo Horizonte. 
+        Args:
+            db (MongoClient): Conexão à base de dados bh-osm.
+    '''
+   
+    nomes_cidades  = db.bh.find(  { "address.city":{"$exists":1} }, {"address.city":1, "_id":1} )
+    for nome in nomes_cidades:
+        # Cidade diferente de Belo Horizonte
+        if nome['address']['city'] != 'Belo Horizonte':
+            rs = db.bh.delete_one( { "_id" : nome['_id'] })
+            
 db = get_db()
 endereco_verificados = verificaEnderecos(db)
 print endereco_verificados
 
 nomes_bh = verifica_nome_belo_horizonte(db)
 print nomes_bh
+
+exclui_cidades_diferentes(db)
